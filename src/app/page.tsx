@@ -329,7 +329,7 @@ export default function DeluloDiaMadre() {
   const { days, hours, mins } = useCountdown(TARGET);
 
   // Client counter — starts at 123, bumps on every WA click (session only)
-  const [clientCount, setClientCount] = useState(123);
+  const [clientCount, setClientCount] = useState(113);
   const handleWaClick = () => setClientCount((c) => c + 1);
 
   // Scroll refs
