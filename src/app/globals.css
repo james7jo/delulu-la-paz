@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 74, 14, 14; /* Un marrón chocolate suave para el texto */
+  --background-start-rgb: 255, 245, 245; /* Delulu Cream */
+  --background-end-rgb: 255, 255, 255;
+}
+
+/* Suavizado de scroll para una mejor UX móvil */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  font-family: 'Inter', sans-serif; /* Fuente limpia y moderna */
+}
+
+@layer components {
+  /* Tarjetas fotorrealistas con efecto de cristal (Glassmorphism) */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-pink-100 shadow-xl rounded-3xl overflow-hidden transition-all duration-300;
+  }
+
+  /* Botones estilo Coquette con sombra suave */
+  .btn-delulu {
+    @apply bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-pink-200 transition-all active:scale-95;
+  }
+
+  /* Animación suave para imágenes fotorrealistas */
+  .img-zoom {
+    @apply transition-transform duration-500 hover:scale-110 object-cover;
+  }
+}
+
+/* Eliminar el resalte azul de los botones en móviles */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
