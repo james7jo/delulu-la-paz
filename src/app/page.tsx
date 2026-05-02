@@ -457,7 +457,7 @@ export default function DeluloDiaMadre() {
   const TARGET = new Date("2026-05-27T00:00:00");
   const { days, hours, mins } = useCountdown(TARGET);
   const [clientCount, setClientCount] = useState(113);
-  const handleWaClick = () => setClientCount((c) => c + 1);
+  const handleWaClick = () => setClientCount((c) => c + 0);
   const catalogRef = useRef<HTMLElement>(null);
   const personalizaRef = useRef<HTMLElement>(null);
   const scrollTo = (ref: React.RefObject<HTMLElement | null>) => {
@@ -658,7 +658,7 @@ export default function DeluloDiaMadre() {
       <section
         ref={personalizaRef}
         id="personaliza"
-        className="mx-5 mt-8 scroll-mt-16 bg-[#FFFFFF] border border-[#F5C6D8] rounded-[28px] p-6 text-center"
+        className="mx-5 mt-8 scroll-mt-16 bg-[#FFFFF] border border-[#F5C6D8] rounded-[28px] p-6 text-center"
       >
         <div className="text-[22px] mb-2">🎀</div>
         <h2 className="text-xl font-black tracking-tight text-[#1a1a1a]">
