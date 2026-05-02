@@ -549,7 +549,7 @@ export default function DeluloDiaMadre() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FFF0F5] text-[#1a1a1a] pb-28">
+    <main className="min-h-screen bg-[#FFFAF9] text-[#1a1a1a] pb-28">
       {/* ── Falling Petals Canvas ── */}
       <PetalCanvas />
 
@@ -605,7 +605,7 @@ export default function DeluloDiaMadre() {
       </div>
 
       {/* ── Nav ── */}
-      <nav className="sticky top-0 z-40 flex justify-between items-center px-5 py-3 bg-[#FFF0F5]/80 backdrop-blur-xl border-b border-[#F5C6D8]">
+      <nav className="sticky top-0 z-40 flex justify-between items-center px-5 py-3 bg-[#FFFAF9]/80 backdrop-blur-xl border-b border-[#F5C6D8]">
         <div className="flex items-center gap-2">
           {/* Logo */}
           <img
