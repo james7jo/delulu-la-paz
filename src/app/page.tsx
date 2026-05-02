@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const WA_NUMBER = "59175259225";
 const TIKTOK_URL = "https://www.tiktok.com/@delulu08.0";
+const INSTAGRAM_URL =
+  "https://www.instagram.com/_delulu.8?igsh=YjFlenM0Z3FheHp1";
 const waLink = (msg: string) =>
   `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
@@ -12,7 +14,7 @@ const waLink = (msg: string) =>
 interface Product {
   id: number;
   badge: string;
-  badgeColor: "dark" | "pink";
+  badgeColor: "red" | "rose";
   image: string;
   name: string;
   subtitle: string;
@@ -27,6 +29,7 @@ interface Review {
   name: string;
   tag: string;
   text: string;
+  photo?: string;
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────
@@ -34,7 +37,7 @@ const PRODUCTS: Product[] = [
   {
     id: 1,
     badge: "✨ Premium",
-    badgeColor: "pink",
+    badgeColor: "red",
     image:
       "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777613850/pack_platinium_rqcf5f.png",
     name: "Pack Platinum",
@@ -44,18 +47,19 @@ const PRODUCTS: Product[] = [
     packType: "Caja acetato transparente",
     tags: ["Caja acetato", "Presentación única", "Fotografiable"],
     contents: [
-      "2 Croissants artesanales",
-      "Panqueques con maple",
+      "Mini torta con rosita",
+      "2 Croissants de queso y jamón",
+      "Panqueques",
       "Jugo de naranja natural",
-      "Mousse de frutilla",
-      "Bowl de frutas frescas",
-      "Chocolate caliente",
+      "Leche con chocolate",
+      "Bowl de frutas picadas",
+      "Mousse de frutilla con crema",
     ],
   },
   {
     id: 2,
     badge: "🎀 Clásico",
-    badgeColor: "dark",
+    badgeColor: "rose",
     image:
       "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777614050/packplata_vt8zx0.png",
     name: "Pack Plata",
@@ -65,12 +69,13 @@ const PRODUCTS: Product[] = [
     packType: "Caja cerrada premium",
     tags: ["Caja cerrada", "Lazo ribbon", "Sorpresa total"],
     contents: [
-      "2 Croissants artesanales",
-      "Panqueques con maple",
+      "Mini torta con rosita",
+      "2 Croissants de queso y jamón",
+      "Panqueques",
       "Jugo de naranja natural",
-      "Mousse de frutilla",
-      "Bowl de frutas frescas",
-      "Chocolate caliente",
+      "Leche con chocolate",
+      "Bowl de frutas picadas",
+      "Mousse de frutilla con crema",
     ],
   },
 ];
@@ -97,7 +102,7 @@ const STEPS = [
   },
   {
     title: "Coordina la entrega",
-    desc: "Elegís horario y dirección en La Paz. Mínimo 72h de anticipación para reservar.",
+    desc: "Elegís horario y dirección. Delivery gratuito en zona urbana de La Paz y El Alto. Zonas alejadas: consultar cotización.",
   },
   {
     title: "¡Momento fotorrealista!",
@@ -114,7 +119,7 @@ const SEED_REVIEWS: Review[] = [
   {
     name: "Camila R.",
     tag: "Pack Plata · Miraflores",
-    text: "El pack plata llego con el lazo llegó perfecta. El mousse de frutilla estaba espectacular. ¡Gracias Delulu por hacer el día tan especial!",
+    text: "El pack plata llegó con el lazo perfecta. El mousse de frutilla estaba espectacular. ¡Gracias Delulu por hacer el día tan especial!",
   },
   {
     name: "Luciana P.",
@@ -142,6 +147,160 @@ function useCountdown(targetDate: Date) {
   return time;
 }
 
+// ─── Petal Canvas — GPU-accelerated, max 18 petals, requestAnimationFrame ──
+function PetalCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    const resize = () => {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    };
+    window.addEventListener("resize", resize);
+
+    // Petal colors — soft rose palette
+    const COLORS = [
+      "#F4759B",
+      "#E8193C",
+      "#FFB3C6",
+      "#D63F72",
+      "#FFD6E4",
+      "#FBACC8",
+    ];
+
+    type Petal = {
+      x: number;
+      y: number;
+      r: number;
+      vx: number;
+      vy: number;
+      angle: number;
+      va: number;
+      color: string;
+      opacity: number;
+      wobble: number;
+      wobbleSpeed: number;
+      wobbleAmp: number;
+    };
+
+    const MAX = 18;
+    const petals: Petal[] = [];
+
+    const spawn = (): Petal => ({
+      x: Math.random() * W,
+      y: -20,
+      r: 5 + Math.random() * 7,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: 0.5 + Math.random() * 0.9,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.025,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      opacity: 0.55 + Math.random() * 0.35,
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.012 + Math.random() * 0.018,
+      wobbleAmp: 0.4 + Math.random() * 0.6,
+    });
+
+    // Pre-populate spread across screen heights so it doesn't look empty at start
+    for (let i = 0; i < MAX; i++) {
+      const p = spawn();
+      p.y = Math.random() * H;
+      petals.push(p);
+    }
+
+    // Draw a single SVG-style rose petal shape
+    const drawPetal = (p: Petal) => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      // Petal: two quadratic bezier curves forming an almond/petal shape
+      const rx = p.r * 0.55;
+      const ry = p.r;
+      ctx.moveTo(0, -ry);
+      ctx.quadraticCurveTo(rx, -ry * 0.3, 0, ry);
+      ctx.quadraticCurveTo(-rx, -ry * 0.3, 0, -ry);
+      ctx.fill();
+      // Subtle inner highlight
+      ctx.globalAlpha = p.opacity * 0.18;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.ellipse(
+        rx * 0.18,
+        -ry * 0.25,
+        rx * 0.22,
+        ry * 0.28,
+        -0.3,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      ctx.restore();
+    };
+
+    let lastSpawn = 0;
+    const SPAWN_INTERVAL = 1800; // ms between new petals
+
+    const tick = (now: number) => {
+      ctx.clearRect(0, 0, W, H);
+
+      // Spawn new petals gradually to keep count at MAX
+      if (petals.length < MAX && now - lastSpawn > SPAWN_INTERVAL) {
+        petals.push(spawn());
+        lastSpawn = now;
+      }
+
+      for (let i = petals.length - 1; i >= 0; i--) {
+        const p = petals[i];
+        p.wobble += p.wobbleSpeed;
+        p.x += p.vx + Math.sin(p.wobble) * p.wobbleAmp;
+        p.y += p.vy;
+        p.angle += p.va;
+
+        if (p.y > H + 30) {
+          petals.splice(i, 1);
+          lastSpawn = 0; // allow immediate respawn
+        } else {
+          drawPetal(p);
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-30"
+      style={{ opacity: 1 }}
+      aria-hidden
+    />
+  );
+}
+
 // ─── Icons ─────────────────────────────────────────────────────────────────
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
@@ -155,6 +314,14 @@ function TikTokIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
+    </svg>
+  );
+}
+
+function InstagramIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   );
 }
@@ -186,9 +353,8 @@ function ProductCard({
 
   const buildMessage = () => {
     let msg = `Buenas, Delulu La Paz 🌸 Quisiera agendar mi pedido del *${product.name}* (${product.price} Bs.)`;
-    if (note.trim()) {
+    if (note.trim())
       msg += `\n\nTengo esta consulta / personalización:\n"${note.trim()}"`;
-    }
     msg += `\n\nQuedo pendiente, gracias! 🎀`;
     return msg;
   };
@@ -199,9 +365,8 @@ function ProductCard({
   };
 
   return (
-    <div className="group bg-white rounded-[32px] overflow-hidden border border-pink-100 shadow-lg shadow-pink-50/60 transition-transform active:scale-[0.99]">
-      {/* Image */}
-      <div className="relative h-56 overflow-hidden bg-pink-50">
+    <div className="group bg-[#FFFAF9] rounded-[32px] overflow-hidden border border-[#F5C6D8] shadow-lg shadow-rose-100/60 transition-transform active:scale-[0.99]">
+      <div className="relative h-56 overflow-hidden bg-[#FFF0F5]">
         <img
           src={product.image}
           alt={product.name}
@@ -209,56 +374,54 @@ function ProductCard({
         />
         <div
           className={`absolute top-3 left-3 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wide ${
-            product.badgeColor === "pink" ? "bg-[#e8427a]" : "bg-[#1a1a1a]"
+            product.badgeColor === "red" ? "bg-[#E8193C]" : "bg-[#D63F72]"
           }`}
         >
           {product.badge}
         </div>
-        <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-[#1a1a1a] px-3 py-1.5 rounded-full border border-pink-100">
+        <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-[#D63F72] px-3 py-1.5 rounded-full border border-[#F5C6D8]">
           {product.packType}
         </div>
       </div>
 
-      {/* Body */}
       <div className="p-5">
-        {/* Header */}
         <div className="flex justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-black tracking-tight leading-none">
+            <h3 className="text-xl font-black tracking-tight leading-none text-[#1a1a1a]">
               {product.name}
             </h3>
-            <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+            <p className="text-[#C07090] text-xs mt-1 leading-relaxed">
               {product.subtitle}
             </p>
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-2xl font-black text-[#e8427a] leading-none">
+            <div className="text-2xl font-black text-[#E8193C] leading-none">
               {product.price}
             </div>
-            <div className="text-[10px] text-gray-400 font-medium">Bs.</div>
+            <div className="text-[10px] text-[#C07090] font-medium">Bs.</div>
           </div>
         </div>
 
-        {/* Adelanto badge */}
-        <div className="inline-flex items-center gap-1.5 mt-3 bg-pink-50 border border-pink-100 rounded-full px-3 py-1">
-          <span className="text-[10px] font-bold text-[#e8427a]">
+        <div className="inline-flex items-center gap-1.5 mt-3 bg-[#FFF0F5] border border-[#F5C6D8] rounded-full px-3 py-1">
+          <span className="text-[10px] font-bold text-[#E8193C]">
             Adelanto:
           </span>
           <span className="text-[10px] font-black text-[#1a1a1a]">
             {product.adelanto} Bs.
           </span>
-          <span className="text-[10px] text-gray-400">(50% para reservar)</span>
+          <span className="text-[10px] text-[#C07090]">
+            (50% para reservar)
+          </span>
         </div>
 
-        {/* Contents */}
         <div className="mt-4">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-bold text-[#C07090] uppercase tracking-widest mb-2">
             Incluye
           </p>
           <div className="grid grid-cols-2 gap-y-1.5 gap-x-2">
             {product.contents.map((item) => (
               <div key={item} className="flex items-center gap-1.5">
-                <span className="text-[#e8427a] flex-shrink-0">
+                <span className="text-[#E8193C] flex-shrink-0">
                   <CheckIcon />
                 </span>
                 <span className="text-xs text-gray-600 leading-tight">
@@ -269,33 +432,49 @@ function ProductCard({
           </div>
         </div>
 
-        {/* Tags */}
         <div className="flex flex-wrap gap-1.5 mt-4">
           {product.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[10px] font-semibold text-pink-700 bg-pink-50 border border-pink-100 px-2.5 py-1 rounded-full"
+              className="text-[10px] font-semibold text-[#D63F72] bg-[#FFF0F5] border border-[#F5C6D8] px-2.5 py-1 rounded-full"
             >
               {tag}
             </span>
           ))}
         </div>
 
-        {/* Note input */}
+        {/* Delivery badge */}
+        <div className="mt-3 flex items-center gap-1.5 bg-[#F0FFF4] border border-[#A8E6C0] rounded-full px-3 py-1.5 w-fit">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#2D9E5F"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+          <span className="text-[10px] font-bold text-[#2D9E5F]">
+            Delivery gratis · La Paz y El Alto
+          </span>
+        </div>
+
         <div className="mt-4">
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="¿Alguna consulta o personalización? ej: ¿pueden agregar flores?"
             rows={2}
-            className="w-full text-xs text-gray-700 placeholder-gray-300 bg-gray-50 border border-pink-100 rounded-2xl px-4 py-3 resize-none focus:outline-none focus:border-[#e8427a] transition-colors"
+            className="w-full text-xs text-gray-700 placeholder-[#D4A0B5] bg-[#FFF7FA] border border-[#F5C6D8] rounded-2xl px-4 py-3 resize-none focus:outline-none focus:border-[#E8193C] transition-colors"
           />
         </div>
 
-        {/* CTA */}
         <button
           onClick={handleWa}
-          className="flex items-center justify-between w-full mt-3 bg-[#e8427a] text-white px-5 py-3.5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all"
+          className="flex items-center justify-between w-full mt-3 bg-[#E8193C] text-white px-5 py-3.5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all"
         >
           <span className="text-xs font-black tracking-wide">
             AGENDAR ESTE PACK
@@ -310,13 +489,20 @@ function ProductCard({
 // ─── ReviewCard ─────────────────────────────────────────────────────────────
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <div className="bg-white rounded-2xl p-4 border border-pink-100">
+    <div className="bg-[#FFFAF9] rounded-2xl p-4 border border-[#F5C6D8]">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-black">{review.name}</span>
-        <span className="text-[#e8427a] text-xs tracking-wider">★★★★★</span>
+        <span className="text-sm font-black text-[#1a1a1a]">{review.name}</span>
+        <span className="text-[#E8193C] text-xs tracking-wider">★★★★★</span>
       </div>
       <p className="text-xs text-gray-500 leading-relaxed">{review.text}</p>
-      <p className="text-[10px] text-gray-300 font-bold mt-2 tracking-widest uppercase">
+      {review.photo && (
+        <img
+          src={review.photo}
+          alt="Foto del pedido"
+          className="mt-3 w-full h-36 object-cover rounded-xl border border-[#F5C6D8]"
+        />
+      )}
+      <p className="text-[10px] text-[#D4A0B5] font-bold mt-2 tracking-widest uppercase">
         {review.tag}
       </p>
     </div>
@@ -328,11 +514,9 @@ export default function DeluloDiaMadre() {
   const TARGET = new Date("2026-05-27T00:00:00");
   const { days, hours, mins } = useCountdown(TARGET);
 
-  // Client counter — starts at 123, bumps on every WA click (session only)
   const [clientCount, setClientCount] = useState(113);
   const handleWaClick = () => setClientCount((c) => c + 1);
 
-  // Scroll refs
   const catalogRef = useRef<HTMLElement>(null);
   const personalizaRef = useRef<HTMLElement>(null);
 
@@ -340,7 +524,6 @@ export default function DeluloDiaMadre() {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Extras state
   const [activeExtras, setActiveExtras] = useState<Set<string>>(new Set());
   const toggleExtra = (e: string) =>
     setActiveExtras((prev) => {
@@ -354,12 +537,9 @@ export default function DeluloDiaMadre() {
     const base =
       "Hola Delulu La Paz 🌸 Quiero consultar sobre personalización para el Día de la Madre.";
     if (extras.length === 0) return base;
-    return `${base}\n\nMe interesan estos extras:\n${extras
-      .map((x) => `• ${x}`)
-      .join("\n")}\n\n¿Me pueden cotizar? 🎀`;
+    return `${base}\n\nMe interesan estos extras:\n${extras.map((x) => `• ${x}`).join("\n")}\n\n¿Me pueden cotizar? 🎀`;
   };
 
-  // Reviews
   const [reviews] = useState<Review[]>(SEED_REVIEWS);
   const [reviewName, setReviewName] = useState("");
   const [reviewText, setReviewText] = useState("");
@@ -368,7 +548,6 @@ export default function DeluloDiaMadre() {
   const submitReview = () => {
     if (!reviewName.trim() || !reviewText.trim()) return;
     setReviewSent(true);
-    // Mensaje enviado al servidor inexistente 😂
     setTimeout(() => {
       setReviewName("");
       setReviewText("");
@@ -376,8 +555,11 @@ export default function DeluloDiaMadre() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fdf6f0] text-[#1a1a1a] pb-28">
-      {/* ── Floating Buttons ───────────────────────────────────────────── */}
+    <main className="min-h-screen bg-[#FFF0F5] text-[#1a1a1a] pb-28">
+      {/* ── Falling Petals Canvas ── */}
+      <PetalCanvas />
+
+      {/* ── Floating Buttons ── */}
       {/* WhatsApp */}
       <a
         href={waLink(
@@ -392,20 +574,35 @@ export default function DeluloDiaMadre() {
       >
         <WhatsAppIcon size={26} />
       </a>
+      {/* Instagram */}
+      <a
+        href={INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ver Instagram de Delulu"
+        className="fixed bottom-24 right-5 z-50 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform"
+        style={{
+          background:
+            "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%)",
+          boxShadow: "0 8px 24px rgba(214,36,159,0.35)",
+        }}
+      >
+        <InstagramIcon size={22} />
+      </a>
       {/* TikTok */}
       <a
         href={TIKTOK_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Ver TikTok de Delulu"
-        className="fixed bottom-24 right-5 z-50 w-14 h-14 bg-[#1a1a1a] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform"
+        className="fixed bottom-[10.5rem] right-5 z-50 w-14 h-14 bg-[#1a1a1a] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform"
         style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
       >
         <TikTokIcon size={22} />
       </a>
 
-      {/* ── Countdown Bar ──────────────────────────────────────────────── */}
-      <div className="bg-[#e8427a] text-white text-center py-2.5 px-4 text-xs font-semibold tracking-wide">
+      {/* ── Countdown Bar ── */}
+      <div className="bg-[#E8193C] text-white text-center py-2.5 px-4 text-xs font-semibold tracking-wide">
         ¡Solo quedan{" "}
         <span className="font-black text-sm">
           {days}d {hours}h {mins}m
@@ -413,37 +610,41 @@ export default function DeluloDiaMadre() {
         — Reserva antes del 27 de mayo
       </div>
 
-      {/* ── Nav ────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-40 flex justify-between items-center px-5 py-3 bg-[#fdf6f0]/80 backdrop-blur-xl border-b border-pink-100">
-        <span className="font-black text-lg tracking-tighter text-[#e8427a]">
-          DELULU ✿
-        </span>
-        {/* botón eliminado — reemplazado por flotante de WA */}
+      {/* ── Nav ── */}
+      <nav className="sticky top-0 z-40 flex justify-between items-center px-5 py-3 bg-[#FFF0F5]/80 backdrop-blur-xl border-b border-[#F5C6D8]">
+        <div className="flex items-center gap-2">
+          {/* Logo */}
+          <img
+            src="/delulu1.png"
+            alt="Delulu"
+            className="h-9 w-auto object-contain"
+          />
+        </div>
       </nav>
 
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      {/* ── Hero ── */}
       <section className="px-6 pt-10 pb-8 text-center">
-        <div className="inline-block bg-white text-[#e8427a] text-[10px] font-bold tracking-[2px] uppercase px-4 py-1.5 rounded-full border border-pink-100 shadow-sm mb-5">
+        <div className="inline-block bg-white text-[#D63F72] text-[10px] font-bold tracking-[2px] uppercase px-4 py-1.5 rounded-full border border-[#F5C6D8] shadow-sm mb-5">
           ✦ Especial Día de la Madre · La Paz ✦
         </div>
         <h1 className="text-5xl font-black leading-[0.9] tracking-tighter">
           Para la mamá
           <br />
           <span
-            className="text-[#e8427a] italic"
+            className="text-[#E8193C] italic"
             style={{ fontFamily: "'Georgia', serif" }}
           >
             más real.
           </span>
         </h1>
-        <p className="mt-4 text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">
-          Desayunos gourmet y cajas sorpresa con entrega en La Paz. Hechos con
-          amor, fotografiados para el feed.
+        <p className="mt-4 text-[#C07090] text-sm leading-relaxed max-w-xs mx-auto">
+          Desayunos gourmet y cajas sorpresa con entrega en La Paz y El Alto.
+          Hechos con amor, fotografiados para el feed.
         </p>
         <div className="flex gap-3 justify-center mt-6">
           <button
             onClick={() => scrollTo(catalogRef)}
-            className="bg-[#e8427a] text-white text-xs font-bold px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
+            className="bg-[#E8193C] text-white text-xs font-bold px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
           >
             Ver productos
           </button>
@@ -456,8 +657,8 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Stats ──────────────────────────────────────────────────────── */}
-      <div className="flex border-y border-pink-100">
+      {/* ── Stats ── */}
+      <div className="flex border-y border-[#F5C6D8]">
         {[
           { num: String(clientCount), label: "Pedidos" },
           { num: "72h", label: "Anticipación" },
@@ -465,28 +666,41 @@ export default function DeluloDiaMadre() {
         ].map((s, i) => (
           <div
             key={i}
-            className={`flex-1 py-4 text-center ${i < 2 ? "border-r border-pink-100" : ""}`}
+            className={`flex-1 py-4 text-center ${i < 2 ? "border-r border-[#F5C6D8]" : ""}`}
           >
-            <div className="text-2xl font-black text-[#e8427a] leading-none tabular-nums">
+            <div className="text-2xl font-black text-[#E8193C] leading-none tabular-nums">
               {s.num}
             </div>
-            <div className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase mt-1">
+            <div className="text-[10px] font-semibold text-[#C07090] tracking-widest uppercase mt-1">
               {s.label}
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Catálogo ───────────────────────────────────────────────────── */}
+      {/* ── Delivery banner ── */}
+      <div className="mx-5 mt-5 bg-[#F0FFF4] border border-[#A8E6C0] rounded-2xl px-4 py-3 flex items-center gap-3">
+        <span className="text-xl">🛵</span>
+        <div>
+          <p className="text-xs font-black text-[#1a7a45]">
+            Delivery GRATIS en La Paz y El Alto
+          </p>
+          <p className="text-[10px] text-[#4a9e6f] mt-0.5">
+            Zonas alejadas: consultanos tu cotización por WhatsApp
+          </p>
+        </div>
+      </div>
+
+      {/* ── Catálogo ── */}
       <section ref={catalogRef} className="px-5 mt-8 scroll-mt-16">
         <div className="mb-5">
-          <p className="text-[10px] font-bold tracking-[2px] text-[#e8427a] uppercase">
+          <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
             ✦ Catálogo
           </p>
           <h2 className="text-3xl font-black tracking-tight mt-1">
-            Elige tu <span className="text-[#e8427a]">pack.</span>
+            Elige tu <span className="text-[#E8193C]">pack.</span>
           </h2>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-[#C07090] mt-1">
             Ambos incluyen el mismo desayuno gourmet. La diferencia está en el
             empaque.
           </p>
@@ -498,17 +712,17 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Personalización ────────────────────────────────────────────── */}
+      {/* ── Personalización ── */}
       <section
         ref={personalizaRef}
         id="personaliza"
-        className="mx-5 mt-8 scroll-mt-16 bg-pink-50 rounded-[28px] p-6 border border-pink-100"
+        className="mx-5 mt-8 scroll-mt-16 bg-[#F9EEFF] rounded-[28px] p-6 border border-[#EAC8F5]"
       >
         <div className="text-3xl mb-2">🎀</div>
         <h2 className="text-xl font-black tracking-tight">
-          ¿Lo quieres <span className="text-[#e8427a]">único?</span>
+          ¿Lo quieres <span className="text-[#E8193C]">único?</span>
         </h2>
-        <p className="text-xs text-pink-700 mt-2 leading-relaxed">
+        <p className="text-xs text-[#A070C0] mt-2 leading-relaxed">
           Seleccioná los extras que querés y te cotizamos al instante por
           WhatsApp.
         </p>
@@ -519,8 +733,8 @@ export default function DeluloDiaMadre() {
               onClick={() => toggleExtra(extra)}
               className={`text-[11px] font-semibold py-2.5 px-3 rounded-2xl border transition-all text-center active:scale-95 ${
                 activeExtras.has(extra)
-                  ? "bg-[#e8427a] text-white border-[#e8427a] shadow-md shadow-pink-200"
-                  : "bg-white text-pink-700 border-pink-200 hover:border-[#e8427a]"
+                  ? "bg-[#E8193C] text-white border-[#E8193C] shadow-md shadow-red-200"
+                  : "bg-white text-[#D63F72] border-[#EAC8F5] hover:border-[#E8193C]"
               }`}
             >
               {extra}
@@ -541,33 +755,31 @@ export default function DeluloDiaMadre() {
         </a>
       </section>
 
-      {/* ── Cómo funciona ──────────────────────────────────────────────── */}
+      {/* ── Cómo funciona ── */}
       <section className="px-5 mt-8">
         <div className="mb-5">
-          <p className="text-[10px] font-bold tracking-[2px] text-[#e8427a] uppercase">
+          <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
             ✦ ¿Cómo funciona?
           </p>
           <h2 className="text-3xl font-black tracking-tight mt-1">
-            Así de <span className="text-[#e8427a]">fácil.</span>
+            Así de <span className="text-[#E8193C]">fácil.</span>
           </h2>
         </div>
-        <div className="flex flex-col divide-y divide-pink-100">
+        <div className="flex flex-col divide-y divide-[#F5C6D8]">
           {STEPS.map((step, i) => (
             <div key={i} className="flex gap-4 items-start py-4">
-              <div className="w-8 h-8 rounded-full bg-[#e8427a] text-white text-sm font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-full bg-[#E8193C] text-white text-sm font-black flex items-center justify-center flex-shrink-0 mt-0.5">
                 {i + 1}
               </div>
               <div>
                 <p className="text-sm font-bold">{step.title}</p>
-                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                <p className="text-xs text-[#C07090] mt-1 leading-relaxed">
                   {step.desc}
                 </p>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Adelanto callout */}
         <div className="mt-4 bg-[#1a1a1a] text-white rounded-2xl p-4 flex gap-3 items-start">
           <span className="text-xl flex-shrink-0">💳</span>
           <div>
@@ -582,37 +794,35 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Opiniones ──────────────────────────────────────────────────── */}
+      {/* ── Opiniones ── */}
       <section className="px-5 mt-8">
         <div className="mb-5">
-          <p className="text-[10px] font-bold tracking-[2px] text-[#e8427a] uppercase">
+          <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
             ✦ Opiniones
           </p>
           <h2 className="text-3xl font-black tracking-tight mt-1">
-            Lo que <span className="text-[#e8427a]">dicen.</span>
+            Lo que <span className="text-[#E8193C]">dicen.</span>
           </h2>
         </div>
-
         <div className="flex flex-col gap-3">
           {reviews.map((r, i) => (
             <ReviewCard key={i} review={r} />
           ))}
         </div>
 
-        {/* Dejar opinión */}
-        <div className="mt-5 bg-white rounded-[24px] p-5 border border-pink-100">
+        {/* Dejar opinión con foto opcional */}
+        <div className="mt-5 bg-[#FFFAF9] rounded-[24px] p-5 border border-[#F5C6D8]">
           <p className="text-sm font-black mb-3">
             ¿Ya pediste con nosotras? ✨
           </p>
           {reviewSent ? (
             <div className="text-center py-6">
               <div className="text-4xl mb-3">🌸</div>
-              <p className="text-sm font-black text-[#e8427a]">
-                ¡Mensaje enviado!
+              <p className="text-sm font-black text-[#E8193C]">
+                ¡Gracias por tu reseña!
               </p>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed max-w-[220px] mx-auto">
-                Nuestros servidores lo aprobarán dentro de poco.{" "}
-                <span className="text-gray-300"></span>
+              <p className="text-xs text-[#C07090] mt-1 leading-relaxed max-w-[220px] mx-auto">
+                La revisaremos y la publicaremos pronto.
               </p>
             </div>
           ) : (
@@ -622,19 +832,27 @@ export default function DeluloDiaMadre() {
                 value={reviewName}
                 onChange={(e) => setReviewName(e.target.value)}
                 placeholder="Tu nombre"
-                className="w-full text-xs text-gray-700 placeholder-gray-300 bg-gray-50 border border-pink-100 rounded-xl px-4 py-2.5 mb-2.5 focus:outline-none focus:border-[#e8427a] transition-colors"
+                className="w-full text-xs text-gray-700 placeholder-[#D4A0B5] bg-[#FFF7FA] border border-[#F5C6D8] rounded-xl px-4 py-2.5 mb-2.5 focus:outline-none focus:border-[#E8193C] transition-colors"
               />
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="Contanos tu experiencia 💕"
                 rows={3}
-                className="w-full text-xs text-gray-700 placeholder-gray-300 bg-gray-50 border border-pink-100 rounded-xl px-4 py-2.5 resize-none focus:outline-none focus:border-[#e8427a] transition-colors"
+                className="w-full text-xs text-gray-700 placeholder-[#D4A0B5] bg-[#FFF7FA] border border-[#F5C6D8] rounded-xl px-4 py-2.5 resize-none focus:outline-none focus:border-[#E8193C] transition-colors"
+              />
+              <p className="text-[10px] text-[#C07090] mt-2 mb-1">
+                ¿Querés agregar una foto de tu pedido?
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full text-[10px] text-[#C07090] bg-[#FFF7FA] border border-[#F5C6D8] rounded-xl px-3 py-2 mb-2.5 file:mr-2 file:text-[10px] file:font-bold file:bg-[#FFF0F5] file:text-[#E8193C] file:border-0 file:rounded-full file:px-3 file:py-1"
               />
               <button
                 onClick={submitReview}
                 disabled={!reviewName.trim() || !reviewText.trim()}
-                className="w-full mt-2 bg-[#e8427a] disabled:opacity-40 text-white text-xs font-black py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all tracking-wide"
+                className="w-full mt-1 bg-[#E8193C] disabled:opacity-40 text-white text-xs font-black py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all tracking-wide"
               >
                 ENVIAR OPINIÓN
               </button>
@@ -643,7 +861,7 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── CTA Final ──────────────────────────────────────────────────── */}
+      {/* ── CTA Final ── */}
       <section className="mx-5 mt-8 bg-[#1a1a1a] rounded-[32px] p-8 text-white text-center relative overflow-hidden">
         <div
           aria-hidden
@@ -655,7 +873,7 @@ export default function DeluloDiaMadre() {
           <h2 className="text-4xl font-black leading-none tracking-tighter">
             ¿Lista para{" "}
             <em
-              className="text-[#e8427a] not-italic"
+              className="text-[#F4759B] not-italic"
               style={{ fontFamily: "'Georgia', serif" }}
             >
               sorprender?
@@ -664,7 +882,7 @@ export default function DeluloDiaMadre() {
           <p className="text-gray-400 text-sm mt-3">
             Reservas limitadas · 27 de mayo · La Paz
           </p>
-          <div className="inline-block mt-4 bg-[#e8427a]/20 text-pink-300 text-[11px] font-bold tracking-wide px-4 py-1.5 rounded-full">
+          <div className="inline-block mt-4 bg-[#E8193C]/20 text-red-300 text-[11px] font-bold tracking-wide px-4 py-1.5 rounded-full">
             📅 Reserva con 72h de anticipación
           </div>
           <a
@@ -679,21 +897,33 @@ export default function DeluloDiaMadre() {
             <WhatsAppIcon size={18} />
             RESERVAR AHORA
           </a>
-          <a
-            href={TIKTOK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 mt-3 text-gray-500 text-[11px] font-semibold hover:text-gray-300 transition-colors"
-          >
-            <TikTokIcon size={13} />
-            @delulu08.0
-          </a>
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-gray-500 text-[11px] font-semibold hover:text-gray-300 transition-colors"
+            >
+              <InstagramIcon size={13} />
+              @_delulu.8
+            </a>
+            <span className="text-gray-700">·</span>
+            <a
+              href={TIKTOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-gray-500 text-[11px] font-semibold hover:text-gray-300 transition-colors"
+            >
+              <TikTokIcon size={13} />
+              @delulu08.0
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="text-center mt-8 text-gray-300 text-[11px]">
-        Hecho con 💕 por Delulu La Paz · @delulu08.0
+      {/* ── Footer ── */}
+      <footer className="text-center mt-8 text-[#C07090] text-[11px]">
+        Hecho con 💕 por Delulu La Paz · @_delulu.8
       </footer>
     </main>
   );
