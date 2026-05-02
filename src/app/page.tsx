@@ -697,7 +697,7 @@ export default function DeluloDiaMadre() {
       <section
         ref={personalizaRef}
         id="personaliza"
-        className="mx-5 mt-8 scroll-mt-16 bg-[#F9EEFF] rounded-[28px] p-6 border border-[#EAC8F5]"
+        className="mx-5 mt-8 scroll-mt-16 bg-[#FFFFFF] rounded-[28px] p-6 border border-[#EAC8F5]"
       >
         <div className="text-3xl mb-2">🎀</div>
         <h2 className="text-xl font-black tracking-tight">
