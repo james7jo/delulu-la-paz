@@ -6,6 +6,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        {/* Ícono de la página (Favicon) */}
+        <link rel="icon" href="/DELULUICON.png" type="image/png" />
+
         <script src="https://cdn.tailwindcss.com"></script>
         <link
           href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap"
@@ -35,7 +38,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-delulu-soft antialiased font-sans text-delulu-dark">
+      {/* suppressHydrationWarning evita el error #418 por los scripts externos */}
+      <body
+        suppressHydrationWarning={true}
+        className="bg-delulu-soft antialiased font-sans text-delulu-dark"
+      >
         {children}
       </body>
     </html>
