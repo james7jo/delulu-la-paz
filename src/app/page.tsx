@@ -22,7 +22,6 @@ interface Product {
   adelanto: number;
   tags: string[];
   contents: string[];
-  packType: string;
 }
 
 interface Review {
@@ -39,12 +38,11 @@ const PRODUCTS: Product[] = [
     badge: "✨ Premium",
     badgeColor: "red",
     image:
-      "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777613850/pack_platinium_rqcf5f.png",
+      "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777685602/deluluplatinium_r5pbag.jpg",
     name: "Pack Platinum",
     subtitle: "Caja de acetato transparente · se ve todo el amor adentro",
     price: 260,
     adelanto: 130,
-    packType: "Caja acetato transparente",
     tags: ["Caja acetato", "Presentación única", "Fotografiable"],
     contents: [
       "Mini torta con rosita",
@@ -59,14 +57,13 @@ const PRODUCTS: Product[] = [
   {
     id: 2,
     badge: "🎀 Clásico",
-    badgeColor: "rose",
+    badgeColor: "red",
     image:
-      "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777614050/packplata_vt8zx0.png",
+      "https://res.cloudinary.com/dh1xm1ov8/image/upload/v1777685602/desayunoplata_gbv25i.jpg",
     name: "Pack Plata",
     subtitle: "Cajita cerrada con lazo · la sorpresa perfecta",
-    price: 230,
-    adelanto: 115,
-    packType: "Caja cerrada premium",
+    price: 240,
+    adelanto: 120,
     tags: ["Caja cerrada", "Lazo ribbon", "Sorpresa total"],
     contents: [
       "Mini torta con rosita",
@@ -379,9 +376,6 @@ function ProductCard({
         >
           {product.badge}
         </div>
-        <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-[#D63F72] px-3 py-1.5 rounded-full border border-[#F5C6D8]">
-          {product.packType}
-        </div>
       </div>
 
       <div className="p-5">
@@ -676,19 +670,6 @@ export default function DeluloDiaMadre() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* ── Delivery banner ── */}
-      <div className="mx-5 mt-5 bg-[#F0FFF4] border border-[#A8E6C0] rounded-2xl px-4 py-3 flex items-center gap-3">
-        <span className="text-xl">🛵</span>
-        <div>
-          <p className="text-xs font-black text-[#1a7a45]">
-            Delivery GRATIS en La Paz y El Alto
-          </p>
-          <p className="text-[10px] text-[#4a9e6f] mt-0.5">
-            Zonas alejadas: consultanos tu cotización por WhatsApp
-          </p>
-        </div>
       </div>
 
       {/* ── Catálogo ── */}
