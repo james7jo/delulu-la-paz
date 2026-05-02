@@ -715,7 +715,7 @@ export default function DeluloDiaMadre() {
             </p>
             <p className="text-xs text-gray-400 mt-1 leading-relaxed">
               Toda reserva requiere el 50% de adelanto para garantizar tu
-              pedido. Pack Platinum: 130 Bs. · Pack Plata: 115 Bs.
+              pedido. Pack Platinum: 130 Bs. · Pack Plata: 120 Bs.
             </p>
           </div>
         </div>
