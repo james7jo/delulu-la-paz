@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// ─── Config ────────────────────────────────────────────────────────────────
 const WA_NUMBER = "59175259225";
 const TIKTOK_URL = "https://www.tiktok.com/@delulu08.0";
 const INSTAGRAM_URL =
   "https://www.instagram.com/_delulu.8?igsh=YjFlenM0Z3FheHp1";
+const FORMSPREE_URL = "https://formspree.io/f/xeenopag";
 const waLink = (msg: string) =>
   `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
-// ─── Types ─────────────────────────────────────────────────────────────────
 interface Product {
   id: number;
   badge: string;
@@ -23,7 +22,6 @@ interface Product {
   tags: string[];
   contents: string[];
 }
-
 interface Review {
   name: string;
   tag: string;
@@ -31,7 +29,6 @@ interface Review {
   photo?: string;
 }
 
-// ─── Data ──────────────────────────────────────────────────────────────────
 const PRODUCTS: Product[] = [
   {
     id: 1,
@@ -125,7 +122,6 @@ const SEED_REVIEWS: Review[] = [
   },
 ];
 
-// ─── Hooks ─────────────────────────────────────────────────────────────────
 function useCountdown(targetDate: Date) {
   const calc = () => {
     const diff = targetDate.getTime() - Date.now();
@@ -144,22 +140,18 @@ function useCountdown(targetDate: Date) {
   return time;
 }
 
-// ─── Petal Canvas — GPU-accelerated, max 18 petals, requestAnimationFrame ──
 function PetalCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
-
-    let W = window.innerWidth;
-    let H = window.innerHeight;
+    let W = window.innerWidth,
+      H = window.innerHeight;
     canvas.width = W;
     canvas.height = H;
-
     const resize = () => {
       W = window.innerWidth;
       H = window.innerHeight;
@@ -167,8 +159,6 @@ function PetalCanvas() {
       canvas.height = H;
     };
     window.addEventListener("resize", resize);
-
-    // Petal colors — soft rose palette
     const COLORS = [
       "#F4759B",
       "#E8193C",
@@ -177,7 +167,6 @@ function PetalCanvas() {
       "#FFD6E4",
       "#FBACC8",
     ];
-
     type Petal = {
       x: number;
       y: number;
@@ -192,10 +181,8 @@ function PetalCanvas() {
       wobbleSpeed: number;
       wobbleAmp: number;
     };
-
     const MAX = 18;
     const petals: Petal[] = [];
-
     const spawn = (): Petal => ({
       x: Math.random() * W,
       y: -20,
@@ -210,15 +197,11 @@ function PetalCanvas() {
       wobbleSpeed: 0.012 + Math.random() * 0.018,
       wobbleAmp: 0.4 + Math.random() * 0.6,
     });
-
-    // Pre-populate spread across screen heights so it doesn't look empty at start
     for (let i = 0; i < MAX; i++) {
       const p = spawn();
       p.y = Math.random() * H;
       petals.push(p);
     }
-
-    // Draw a single SVG-style rose petal shape
     const drawPetal = (p: Petal) => {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -226,14 +209,12 @@ function PetalCanvas() {
       ctx.globalAlpha = p.opacity;
       ctx.fillStyle = p.color;
       ctx.beginPath();
-      // Petal: two quadratic bezier curves forming an almond/petal shape
-      const rx = p.r * 0.55;
-      const ry = p.r;
+      const rx = p.r * 0.55,
+        ry = p.r;
       ctx.moveTo(0, -ry);
       ctx.quadraticCurveTo(rx, -ry * 0.3, 0, ry);
       ctx.quadraticCurveTo(-rx, -ry * 0.3, 0, -ry);
       ctx.fill();
-      // Subtle inner highlight
       ctx.globalAlpha = p.opacity * 0.18;
       ctx.fillStyle = "#fff";
       ctx.beginPath();
@@ -249,56 +230,43 @@ function PetalCanvas() {
       ctx.fill();
       ctx.restore();
     };
-
     let lastSpawn = 0;
-    const SPAWN_INTERVAL = 1800; // ms between new petals
-
     const tick = (now: number) => {
       ctx.clearRect(0, 0, W, H);
-
-      // Spawn new petals gradually to keep count at MAX
-      if (petals.length < MAX && now - lastSpawn > SPAWN_INTERVAL) {
+      if (petals.length < MAX && now - lastSpawn > 1800) {
         petals.push(spawn());
         lastSpawn = now;
       }
-
       for (let i = petals.length - 1; i >= 0; i--) {
         const p = petals[i];
         p.wobble += p.wobbleSpeed;
         p.x += p.vx + Math.sin(p.wobble) * p.wobbleAmp;
         p.y += p.vy;
         p.angle += p.va;
-
         if (p.y > H + 30) {
           petals.splice(i, 1);
-          lastSpawn = 0; // allow immediate respawn
+          lastSpawn = 0;
         } else {
           drawPetal(p);
         }
       }
-
       rafRef.current = requestAnimationFrame(tick);
     };
-
     rafRef.current = requestAnimationFrame(tick);
-
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", resize);
     };
   }, []);
-
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-30"
-      style={{ opacity: 1 }}
       aria-hidden
     />
   );
 }
 
-// ─── Icons ─────────────────────────────────────────────────────────────────
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -306,7 +274,6 @@ function WhatsAppIcon({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-
 function TikTokIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -314,7 +281,6 @@ function TikTokIcon({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-
 function InstagramIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -322,7 +288,6 @@ function InstagramIcon({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-
 function CheckIcon() {
   return (
     <svg
@@ -338,7 +303,6 @@ function CheckIcon() {
   );
 }
 
-// ─── ProductCard ────────────────────────────────────────────────────────────
 function ProductCard({
   product,
   onWaClick,
@@ -347,7 +311,6 @@ function ProductCard({
   onWaClick: () => void;
 }) {
   const [note, setNote] = useState("");
-
   const buildMessage = () => {
     let msg = `Buenas, Delulu La Paz 🌸 Quisiera agendar mi pedido del *${product.name}* (${product.price} Bs.)`;
     if (note.trim())
@@ -355,12 +318,10 @@ function ProductCard({
     msg += `\n\nQuedo pendiente, gracias! 🎀`;
     return msg;
   };
-
   const handleWa = () => {
     onWaClick();
     window.open(waLink(buildMessage()), "_blank");
   };
-
   return (
     <div className="group bg-[#FFFAF9] rounded-[32px] overflow-hidden border border-[#F5C6D8] shadow-lg shadow-rose-100/60 transition-transform active:scale-[0.99]">
       <div className="relative h-56 overflow-hidden bg-[#FFF0F5]">
@@ -370,14 +331,11 @@ function ProductCard({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
         <div
-          className={`absolute top-3 left-3 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wide ${
-            product.badgeColor === "red" ? "bg-[#E8193C]" : "bg-[#D63F72]"
-          }`}
+          className={`absolute top-3 left-3 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wide ${product.badgeColor === "red" ? "bg-[#E8193C]" : "bg-[#D63F72]"}`}
         >
           {product.badge}
         </div>
       </div>
-
       <div className="p-5">
         <div className="flex justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
@@ -395,7 +353,6 @@ function ProductCard({
             <div className="text-[10px] text-[#C07090] font-medium">Bs.</div>
           </div>
         </div>
-
         <div className="inline-flex items-center gap-1.5 mt-3 bg-[#FFF0F5] border border-[#F5C6D8] rounded-full px-3 py-1">
           <span className="text-[10px] font-bold text-[#E8193C]">
             Adelanto:
@@ -407,7 +364,6 @@ function ProductCard({
             (50% para reservar)
           </span>
         </div>
-
         <div className="mt-4">
           <p className="text-[10px] font-bold text-[#C07090] uppercase tracking-widest mb-2">
             Incluye
@@ -425,7 +381,6 @@ function ProductCard({
             ))}
           </div>
         </div>
-
         <div className="flex flex-wrap gap-1.5 mt-4">
           {product.tags.map((tag) => (
             <span
@@ -436,8 +391,6 @@ function ProductCard({
             </span>
           ))}
         </div>
-
-        {/* Delivery badge */}
         <div className="mt-3 flex items-center gap-1.5 bg-[#F0FFF4] border border-[#A8E6C0] rounded-full px-3 py-1.5 w-fit">
           <svg
             width="11"
@@ -455,7 +408,6 @@ function ProductCard({
             Delivery gratis · La Paz y El Alto
           </span>
         </div>
-
         <div className="mt-4">
           <textarea
             value={note}
@@ -465,7 +417,6 @@ function ProductCard({
             className="w-full text-xs text-gray-700 placeholder-[#D4A0B5] bg-[#FFF7FA] border border-[#F5C6D8] rounded-2xl px-4 py-3 resize-none focus:outline-none focus:border-[#E8193C] transition-colors"
           />
         </div>
-
         <button
           onClick={handleWa}
           className="flex items-center justify-between w-full mt-3 bg-[#E8193C] text-white px-5 py-3.5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all"
@@ -480,7 +431,6 @@ function ProductCard({
   );
 }
 
-// ─── ReviewCard ─────────────────────────────────────────────────────────────
 function ReviewCard({ review }: { review: Review }) {
   return (
     <div className="bg-[#FFFAF9] rounded-2xl p-4 border border-[#F5C6D8]">
@@ -503,21 +453,16 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
 export default function DeluloDiaMadre() {
   const TARGET = new Date("2026-05-27T00:00:00");
   const { days, hours, mins } = useCountdown(TARGET);
-
   const [clientCount, setClientCount] = useState(113);
   const handleWaClick = () => setClientCount((c) => c + 1);
-
   const catalogRef = useRef<HTMLElement>(null);
   const personalizaRef = useRef<HTMLElement>(null);
-
   const scrollTo = (ref: React.RefObject<HTMLElement | null>) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
   const [activeExtras, setActiveExtras] = useState<Set<string>>(new Set());
   const toggleExtra = (e: string) =>
     setActiveExtras((prev) => {
@@ -525,7 +470,6 @@ export default function DeluloDiaMadre() {
       next.has(e) ? next.delete(e) : next.add(e);
       return next;
     });
-
   const personalizaMsg = () => {
     const extras = [...activeExtras];
     const base =
@@ -533,28 +477,50 @@ export default function DeluloDiaMadre() {
     if (extras.length === 0) return base;
     return `${base}\n\nMe interesan estos extras:\n${extras.map((x) => `• ${x}`).join("\n")}\n\n¿Me pueden cotizar? 🎀`;
   };
-
   const [reviews] = useState<Review[]>(SEED_REVIEWS);
+
+  // ── Formspree review state ──────────────────────────────────────────────
   const [reviewName, setReviewName] = useState("");
   const [reviewText, setReviewText] = useState("");
   const [reviewSent, setReviewSent] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState(false);
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!reviewName.trim() || !reviewText.trim()) return;
-    setReviewSent(true);
-    setTimeout(() => {
-      setReviewName("");
-      setReviewText("");
-    }, 300);
+    setReviewLoading(true);
+    setReviewError(false);
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          nombre: reviewName.trim(),
+          opinion: reviewText.trim(),
+        }),
+      });
+      if (res.ok) {
+        setReviewSent(true);
+        setReviewName("");
+        setReviewText("");
+      } else {
+        setReviewError(true);
+      }
+    } catch {
+      setReviewError(true);
+    } finally {
+      setReviewLoading(false);
+    }
   };
 
   return (
     <main className="min-h-screen bg-[#FFFAF9] text-[#1a1a1a] pb-28">
-      {/* ── Falling Petals Canvas ── */}
       <PetalCanvas />
 
-      {/* ── Floating Buttons ── */}
-      {/* WhatsApp */}
+      {/* Floating buttons */}
       <a
         href={waLink(
           "Hola Delulu La Paz! 🌸 Quiero reservar para el Día de la Madre 🎀",
@@ -568,7 +534,6 @@ export default function DeluloDiaMadre() {
       >
         <WhatsAppIcon size={26} />
       </a>
-      {/* Instagram */}
       <a
         href={INSTAGRAM_URL}
         target="_blank"
@@ -583,7 +548,6 @@ export default function DeluloDiaMadre() {
       >
         <InstagramIcon size={22} />
       </a>
-      {/* TikTok */}
       <a
         href={TIKTOK_URL}
         target="_blank"
@@ -595,7 +559,7 @@ export default function DeluloDiaMadre() {
         <TikTokIcon size={22} />
       </a>
 
-      {/* ── Countdown Bar ── */}
+      {/* Countdown */}
       <div className="bg-[#E8193C] text-white text-center py-2.5 px-4 text-xs font-semibold tracking-wide">
         ¡Solo quedan{" "}
         <span className="font-black text-sm">
@@ -604,19 +568,16 @@ export default function DeluloDiaMadre() {
         — Reserva antes del 27 de mayo
       </div>
 
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className="sticky top-0 z-40 flex justify-between items-center px-5 py-3 bg-[#FFFAF9]/80 backdrop-blur-xl border-b border-[#F5C6D8]">
-        <div className="flex items-center gap-2">
-          {/* Logo */}
-          <img
-            src="/delulu1.png"
-            alt="Delulu"
-            className="h-9 w-auto object-contain"
-          />
-        </div>
+        <img
+          src="/delulu1.png"
+          alt="Delulu"
+          className="h-9 w-auto object-contain"
+        />
       </nav>
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="px-6 pt-10 pb-8 text-center">
         <div className="inline-block bg-white text-[#D63F72] text-[10px] font-bold tracking-[2px] uppercase px-4 py-1.5 rounded-full border border-[#F5C6D8] shadow-sm mb-5">
           ✦ Especial Día de la Madre · La Paz ✦
@@ -651,7 +612,7 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
+      {/* Stats */}
       <div className="flex border-y border-[#F5C6D8]">
         {[
           { num: String(clientCount), label: "Pedidos" },
@@ -672,7 +633,7 @@ export default function DeluloDiaMadre() {
         ))}
       </div>
 
-      {/* ── Catálogo ── */}
+      {/* Catálogo */}
       <section ref={catalogRef} className="px-5 mt-8 scroll-mt-16">
         <div className="mb-5">
           <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
@@ -693,50 +654,35 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Personalización ── */}
+      {/* Live TikTok */}
       <section
         ref={personalizaRef}
         id="personaliza"
-        className="mx-5 mt-8 scroll-mt-16 bg-[#FFFAF9] rounded-[28px] p-6 border border-[#EAC8F5]"
+        className="mx-5 mt-8 scroll-mt-16 bg-[#FFFFFF] border border-[#F5C6D8] rounded-[28px] p-6 text-center"
       >
-        <div className="text-3xl mb-2">🎀</div>
-        <h2 className="text-xl font-black tracking-tight">
-          ¿Lo quieres <span className="text-[#E8193C]">único?</span>
+        <div className="text-[22px] mb-2">🎀</div>
+        <h2 className="text-xl font-black tracking-tight text-[#1a1a1a]">
+          ¿Estamos en live?
         </h2>
-        <p className="text-xs text-[#A070C0] mt-2 leading-relaxed">
-          Seleccioná los extras que querés y te cotizamos al instante por
-          WhatsApp.
+        <p className="text-xs text-[#C07090] mt-3 leading-relaxed max-w-[260px] mx-auto">
+          Si nos encontrás en vivo en TikTok, pedí tu descuento especial — solo
+          mientras dure el live
         </p>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {EXTRAS.map((extra) => (
-            <button
-              key={extra}
-              onClick={() => toggleExtra(extra)}
-              className={`text-[11px] font-semibold py-2.5 px-3 rounded-2xl border transition-all text-center active:scale-95 ${
-                activeExtras.has(extra)
-                  ? "bg-[#E8193C] text-white border-[#E8193C] shadow-md shadow-red-200"
-                  : "bg-white text-[#D63F72] border-[#EAC8F5] hover:border-[#E8193C]"
-              }`}
-            >
-              {extra}
-            </button>
-          ))}
-        </div>
+        <p className="text-[10px] text-[#D4A0B5] mt-2">
+          Solemos hacer lives en las noches y al mediodía ✨
+        </p>
         <a
-          href={waLink(personalizaMsg())}
+          href={TIKTOK_URL}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={handleWaClick}
-          className="flex items-center justify-between mt-5 bg-[#1a1a1a] text-white px-5 py-3.5 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all"
+          className="inline-flex items-center gap-2 mt-5 bg-[#1a1a1a] text-white text-xs font-black px-6 py-3.5 rounded-full hover:opacity-90 active:scale-[0.98] transition-all"
         >
-          <span className="text-xs font-black tracking-wide">
-            CONSULTAR PERSONALIZACIÓN
-          </span>
-          <WhatsAppIcon size={16} />
+          <TikTokIcon size={13} />
+          IR AL TIKTOK
         </a>
       </section>
 
-      {/* ── Cómo funciona ── */}
+      {/* Cómo funciona */}
       <section className="px-5 mt-8">
         <div className="mb-5">
           <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
@@ -775,7 +721,7 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Opiniones ── */}
+      {/* Opiniones */}
       <section className="px-5 mt-8">
         <div className="mb-5">
           <p className="text-[10px] font-bold tracking-[2px] text-[#E8193C] uppercase">
@@ -791,7 +737,7 @@ export default function DeluloDiaMadre() {
           ))}
         </div>
 
-        {/* Dejar opinión con foto opcional */}
+        {/* Formulario → Formspree */}
         <div className="mt-5 bg-[#FFFAF9] rounded-[24px] p-5 border border-[#F5C6D8]">
           <p className="text-sm font-black mb-3">
             ¿Ya pediste con nosotras? ✨
@@ -822,27 +768,26 @@ export default function DeluloDiaMadre() {
                 rows={3}
                 className="w-full text-xs text-gray-700 placeholder-[#D4A0B5] bg-[#FFF7FA] border border-[#F5C6D8] rounded-xl px-4 py-2.5 resize-none focus:outline-none focus:border-[#E8193C] transition-colors"
               />
-              <p className="text-[10px] text-[#C07090] mt-2 mb-1">
-                ¿Querés agregar una foto de tu pedido?
-              </p>
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full text-[10px] text-[#C07090] bg-[#FFF7FA] border border-[#F5C6D8] rounded-xl px-3 py-2 mb-2.5 file:mr-2 file:text-[10px] file:font-bold file:bg-[#FFF0F5] file:text-[#E8193C] file:border-0 file:rounded-full file:px-3 file:py-1"
-              />
+              {reviewError && (
+                <p className="text-[10px] text-[#E8193C] mt-1 mb-1">
+                  Hubo un error al enviar. Intentá de nuevo 🙏
+                </p>
+              )}
               <button
                 onClick={submitReview}
-                disabled={!reviewName.trim() || !reviewText.trim()}
-                className="w-full mt-1 bg-[#E8193C] disabled:opacity-40 text-white text-xs font-black py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all tracking-wide"
+                disabled={
+                  !reviewName.trim() || !reviewText.trim() || reviewLoading
+                }
+                className="w-full mt-2 bg-[#E8193C] disabled:opacity-40 text-white text-xs font-black py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all tracking-wide"
               >
-                ENVIAR OPINIÓN
+                {reviewLoading ? "ENVIANDO..." : "ENVIAR OPINIÓN"}
               </button>
             </>
           )}
         </div>
       </section>
 
-      {/* ── CTA Final ── */}
+      {/* CTA Final */}
       <section className="mx-5 mt-8 bg-[#1a1a1a] rounded-[32px] p-8 text-white text-center relative overflow-hidden">
         <div
           aria-hidden
@@ -902,7 +847,6 @@ export default function DeluloDiaMadre() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
       <footer className="text-center mt-8 text-[#C07090] text-[11px]">
         Hecho con 💕 por Delulu La Paz · @_delulu.8
       </footer>
